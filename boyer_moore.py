@@ -97,6 +97,18 @@ def extended_bad_char(pat: str) -> list[list[int]]:
     pattern.
     For every character in the pattern, we copy the previous 1-D array of length |N| and
     change the corresponding character in the array to current index
+
+    Parameters:
+    pat (str): pattern to create extended bad character array for
+
+    Returns:
+    list[list[int]]: 2-D array of the left rightmost occurrence of each constant number of 
+                     ASCII characters
+
+    Note:
+    - Complexity of O(m * |N|): m is the size of the pattern and |N| is the constant number
+      of ASCII characters existing, however, since |N| is a constant size, we can omit treat
+      it as constant time therefore O(m * 1) = O(m)
     """
     num_of_char = LARGEST_ASCII - LOWEST_ASCII
     ext_bad_char_arr = [[-1] * num_of_char]
@@ -111,11 +123,52 @@ def extended_bad_char(pat: str) -> list[list[int]]:
 
     return ext_bad_char_arr
 
-def good_suffix()
+
+def good_suffix(pat: str) -> list[int]:
+    """
+    Applying the good suffix rule to the pattern where it will produce a 
+    good suffix array which contains information on the longest substring 
+    that matches the prefix
+
+    Parameters:
+    pat (str): Pattern string to apply good suffix on
+
+    Returns:
+    list[int]: A good suffix array
+
+    Note:
+    - Complexity of O(m) where m is the pattern size
+    """
+    # Pass reverse pattern into z algorithm to get z suffix array
+    z_suffix_array = z_algorithm(pat[::-1])[::-1]
+    m = len(pat)
+    good_suffix = [-1] * (m + 1)
+
+    # From first character to second last character (len(pat) - 2)
+    for i in range(m - 1):
+
+        j = m - z_suffix_array[i]
+        good_suffix[j] = i
+
+    return good_suffix
+
+
+def reversed_good_suffix(pat: str) -> list[int]:
+    """
+    Applying good suffix on a reversed pattern. Essentially finding the good prefix
+    of the pattern, then reverse and return the result. Will be used on the implementation
+    of reversed Boyer Moore algorithm
+
+    Parameters:
+    pat (str): Pattern string to find good "prefix"
+
+    Returns:
+    list[int]: Reversed good "prefix" array
+    """
+    good_prefix = good_suffix(pat[::-1])
+    return good_prefix[::-1]
 
 
 if __name__ == "__main__":
-    bc = extended_bad_char("tbapxab")
-
-    for i in range(len(bc)):
-        print(bc[i])
+    pat = "abacaba"
+    print(good_suffix("acababacaba"))
