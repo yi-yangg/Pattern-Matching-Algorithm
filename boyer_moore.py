@@ -1,5 +1,6 @@
 LOWEST_ASCII = ord('!')
 LARGEST_ASCII = ord('~')
+NAN = -1
 
 
 def z_algorithm(text: str) -> list[int]:
@@ -25,7 +26,7 @@ def z_algorithm(text: str) -> list[int]:
     r = 0
 
     z_array = [0] * len(text)
-    z_array[0] = None
+    z_array[0] = NAN
 
     for i in range(1, len(text)):
         # If current iteration is inside rightmost Z box
@@ -111,7 +112,7 @@ def extended_bad_char(pat: str) -> list[list[int]]:
       it as constant time therefore O(m * 1) = O(m)
     """
     num_of_char = LARGEST_ASCII - LOWEST_ASCII
-    ext_bad_char_arr = [[-1] * num_of_char]
+    ext_bad_char_arr = [[NAN] * num_of_char]
 
     # Start from the second char of pat
     for i in range(1, len(pat)):
@@ -122,6 +123,25 @@ def extended_bad_char(pat: str) -> list[list[int]]:
         ext_bad_char_arr.append(bad_char_for_i)
 
     return ext_bad_char_arr
+
+
+def reversed_ext_bad_char(pat: str) -> list[int]:
+    """
+    Applying the reversed version of bad character, the suffix of a
+    string is now the prefix, then reverse the reversed bad char arr
+    back, since our pat will be matched in the normal direction.
+
+    Parameters:
+    pat (str): Pattern to apply reversed version of bad character
+
+    Returns:
+    list[int]: Bad character array with reversed index
+
+    Note:
+    - When accessing the bad char array with reversed index len(pat) - 1 - bc[row][char]
+    """
+    reversed_bad_char_arr = extended_bad_char(pat[::-1])
+    return reversed_bad_char_arr[::-1]
 
 
 def good_suffix(pat: str) -> list[int]:
@@ -142,7 +162,7 @@ def good_suffix(pat: str) -> list[int]:
     # Pass reverse pattern into z algorithm to get z suffix array
     z_suffix_array = z_algorithm(pat[::-1])[::-1]
     m = len(pat)
-    good_suffix = [-1] * (m + 1)
+    good_suffix = [NAN] * (m + 1)
 
     # From first character to second last character (len(pat) - 2)
     for i in range(m - 1):
@@ -169,6 +189,64 @@ def reversed_good_suffix(pat: str) -> list[int]:
     return good_prefix[::-1]
 
 
+def matched_prefix(pat: str) -> list[int]:
+    """
+    Applying matched prefix to pattern preprocessing, find the longest suffix that matches the
+    prefix of pattern. The first index of the matched prefix array will always to the size of
+    the string (prefix == suffix). Apply Z algorithm then checks if i + zbox == len(pat) if it is 
+    then store the size of the zbox. Matched prefix array at k index contains the length of the longest
+    suffix that matches the prefix of given pattern
+
+    Parameter:
+    pat (str): Pattern string to apply matched prefix on
+
+    Returns:
+    list[int]: A list of integer containing the length of the longest suffix that matches prefix
+
+    Note:
+    Require O(m) time complexity. Applies Z algorithm which takes O(m) time and process the z array
+    to obtain the matched prefix array O(m), O(m + m) = O(2m) = O(m)
+    """
+    # Apply Z algorithm
+    z_matched_array = z_algorithm(pat)
+    m = len(pat)
+
+    # Create matched prefix array with m + 1 size, the m + 1 index stores the info on shift when
+    # first index of pat unmatch with text
+    matched_prefix_arr = [-1] * (m+1)
+
+    # Find the largest suffix that matches the prefix, loops from back to front, largest suffix will be on the left
+    for i in range(m-1, -1, -1):
+        # If the z box reaches the end of the string, meaning matched prefix
+        if i + z_matched_array[i] == m:
+            matched_prefix_arr[i] = z_matched_array[i]
+
+        else:
+            matched_prefix_arr[i] = matched_prefix_arr[i+1]
+
+    # First index of matched prefix is always length of string
+    matched_prefix_arr[0] = m
+
+    return matched_prefix_arr
+
+
+def reversed_matched_prefix(pat: str) -> list[int]:
+    """
+    Applying matched prefix rule in reversed. To be used in the reverse implementation
+    of Boyer Moore. The suffix of the string is now the prefix, vice versa. Input the 
+    reversed pattern into the original matched prefix function then reversed the output
+    so that it matches the original pattern indexes
+
+    Parameters:
+    pat (str): Pattern string that reversed matched prefix is applied on
+
+    Returns:
+    list[int]: A list of int containing the largest suffix that matches prefix in the reversed direction
+    """
+    reversed_mp_arr = matched_prefix(pat[::-1])
+    return reversed_mp_arr[::-1]
+
+
 if __name__ == "__main__":
     pat = "abacaba"
-    print(good_suffix("acababacaba"))
+    print(matched_prefix("acababacaba"[::-1])[::-1])
