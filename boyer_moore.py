@@ -279,6 +279,8 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
         # Set text and pattern pointer
         pattern_pointer = 0
         text_pointer = search_index_on_text
+        start = NAN
+        stop = NAN
 
         # Loop to check pattern with text and perform shifts
         while True:
@@ -287,6 +289,9 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
                 shift_amt = m - matched_prefix_arr[-2]
                 i -= shift_amt
                 break
+
+            elif pattern_pointer == start:
+                pattern_pointer = stop + 1
 
             # If the text and pat char is the same then check next char in pat and text
             if text[text_pointer] == pat[pattern_pointer]:
@@ -299,23 +304,55 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
                 # If not the same perform shifts
                 # Char mismatch in text
                 char_mismatch = text[text_pointer]
-                # Get bad char shift, refer to Note in reversed_ext_bad_char function
+                # Get left-rightmost mismatch character from bad character array
                 bad_char_index = bad_char_arr[pattern_pointer][get_index_from_char(
                     char_mismatch)]
+                # Calculate bad character shift, using length of pat to minus bad_char_index to reverse index
                 bc_shift = m - 1 - bad_char_index - pattern_pointer
 
+                # Good suffix and matched prefix array follows 1 based indexing, since the m + 1 index is now 0 index
                 if good_suffix_arr[pattern_pointer] == NAN:
+                    # Use matched prefix when good suffix is None
                     gs_shift = m - matched_prefix_arr[pattern_pointer]
                 else:
                     gs_shift = m - 1 - good_suffix_arr[pattern_pointer]
 
                 shift_amt = max(bc_shift, gs_shift)
+
+                # Optimization
+
+                if (pattern_pointer - 1 == NAN and bc_shift == gs_shift) or bc_shift > gs_shift:
+                    start = stop = m - 1 - bad_char_index
+
+                # Optimization
+                # Bad character shift optimization don't need to check when bad character is shifted since we know it matches
+                if bc_shift > gs_shift:
+                    start = stop = m - 1 - bad_char_index
+
+                # Good suffix, match prefix, (Good suffix == bad character) shift optimization
+                else:
+                    # Match prefix shift is used, set start to 0 and end to matchprefix - 1
+                    if good_suffix_arr[pattern_pointer] == NAN:
+                        start = 0
+                        # matched prefix array storing the length of longest prefix that matches the suffix
+                        stop = matched_prefix_arr[pattern_pointer] - 1
+                    # Good suffix is used
+                    else:
+                        start = m - 1 - good_suffix_arr[pattern_pointer]
+                        stop = start + pattern_pointer - 1
+                        if bc_shift == gs_shift:
+                            start += 1
+                            stop += 1
+
+                # check if good suffix/matched prefix is taking the m + 1
+
                 i -= shift_amt
                 break
     return occurrence
 
 
 if __name__ == "__main__":
-    txt = "abcabcabca"
-    pat = "bc"
+    txt = "aabaaaaabaaa"
+    pat = "aaba"
+
     print(reversed_boyer_moore(txt, pat))
