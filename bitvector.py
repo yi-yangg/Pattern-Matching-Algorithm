@@ -1,4 +1,6 @@
 from bitarray import *
+import sys
+from tools import read_file, write_file
 
 
 def bitvector_pat_match(text: str, pat: str) -> list[int]:
@@ -39,3 +41,16 @@ def bitvector_pat_match(text: str, pat: str) -> list[int]:
             occurrences.append((i + 1) - m + 1)
 
     return occurrences
+
+
+if __name__ == "__main__":
+    _, text_file, pat_file = sys.argv
+
+    text = read_file(text_file)
+    pat = read_file(pat_file)
+    result = bitvector_pat_match(text, pat)
+
+    result_str = "\n".join(map(str, result))
+
+    output_file = "output_bitvector.txt"
+    write_file(output_file, result_str)

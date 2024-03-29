@@ -1,5 +1,7 @@
-LOWEST_ASCII = ord('!')
-LARGEST_ASCII = ord('~')
+import sys
+from tools import read_file, write_file
+
+ASCII_SIZE = 128
 NAN = -1
 
 
@@ -75,22 +77,6 @@ def z_algorithm(text: str) -> list[int]:
     return z_array
 
 
-def get_index_from_char(c: str) -> int:
-    """
-    Get the char index after offsetting with the lowest ascii value
-
-    Parameters:
-    c (str): Character to find index for
-
-    Returns:
-    int: Index representing the position of the char after offset
-
-    Note:
-    O(1) time complexity
-    """
-    return ord(c) - LOWEST_ASCII
-
-
 def extended_bad_char(pat: str) -> list[list[int]]:
     """
     Extended version of the bad character rule, using a 2-D array of |N| x m
@@ -111,14 +97,14 @@ def extended_bad_char(pat: str) -> list[list[int]]:
       of ASCII characters existing, however, since |N| is a constant size, we can omit treat
       it as constant time therefore O(m * 1) = O(m)
     """
-    num_of_char = LARGEST_ASCII - LOWEST_ASCII
+    num_of_char = ASCII_SIZE
     ext_bad_char_arr = [[NAN] * num_of_char]
 
     # Start from the second char of pat
     for i in range(1, len(pat)):
         bad_char_for_i = ext_bad_char_arr[i - 1].copy()
         # Set the position of the character in the previous location to the previous location
-        bad_char_for_i[get_index_from_char(pat[i - 1])] = i - 1
+        bad_char_for_i[ord(pat[i - 1])] = i - 1
         # Populate the 2-D bad character array
         ext_bad_char_arr.append(bad_char_for_i)
 
@@ -329,10 +315,9 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
                 # Char mismatch in text
                 char_mismatch = text[search_index_on_text + pattern_pointer]
                 # Get left-rightmost mismatch character from bad character array
-                bad_char_index = bad_char_arr[pattern_pointer][get_index_from_char(
-                    char_mismatch)]
-                # Calculate bad character shift, using length of pat to minus bad_char_index to reverse index
-                bc_shift = m - 1 - bad_char_index - pattern_pointer
+                bc_index = bad_char_arr[pattern_pointer][ord(char_mismatch)]
+                # Calculate bad character shift, using length of pat to minus bc_index to reverse index
+                bc_shift = m - 1 - bc_index - pattern_pointer
 
                 # Good suffix and matched prefix array follows 1 based indexing, since the m + 1 index is now 0 index
                 if good_suffix_arr[pattern_pointer] == NAN:
@@ -347,10 +332,10 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
                 # If my prefix length == 0 and the shift amount is the same for bc and gs then choose bc shift
                 if (pattern_pointer - 1 == NAN and bc_shift == gs_shift) or bc_shift > gs_shift:
                     # If the bad character index is NAN then reset start, stop. Cant optimize
-                    if bad_char_index == NAN:
+                    if bc_index == NAN:
                         start = stop = NAN
                     else:
-                        start = stop = m - 1 - bad_char_index
+                        start = stop = m - 1 - bc_index
 
                 # Choosing good suffix shift, if prefix length before mismatch != 0 then optimization can be applied
                 elif pattern_pointer - 1 != NAN:
@@ -375,7 +360,13 @@ def reversed_boyer_moore(text: str, pat: str) -> list[int]:
 
 
 if __name__ == "__main__":
-    txt = "cacabccacabab"
-    pat = "cacab"
+    _, text_file, pat_file = sys.argv
 
-    print(reversed_boyer_moore(txt, pat))
+    text = read_file(text_file)
+    pat = read_file(pat_file)
+    result = reversed_boyer_moore(text, pat)
+
+    result_str = "\n".join(map(str, result))
+
+    output_file = "output_boyer_moore.txt"
+    write_file(output_file, result_str)
