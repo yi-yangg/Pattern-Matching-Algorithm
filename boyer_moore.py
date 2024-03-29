@@ -138,7 +138,9 @@ def reversed_ext_bad_char(pat: str) -> list[int]:
     list[int]: Bad character array with reversed index
 
     Note:
-    - When accessing the bad char array with reversed index len(pat) - 1 - bc[row][char]
+    - When accessing the bad char array with reversed index = len(pat) - 1 - bc[mismatch][char] - mismatch
+    - Instead of mismatch - bc index, reverse does it by bc index - mismatch, since now we need the right-leftmost 
+      occ of mismatch char instead of left-rightmost occ
     """
     reversed_bad_char_arr = extended_bad_char(pat[::-1])
     return reversed_bad_char_arr[::-1]
@@ -164,7 +166,7 @@ def good_suffix(pat: str) -> list[int]:
     m = len(pat)
     good_suffix = [NAN] * (m + 1)
 
-    # From first character to second last character (len(pat) - 2)
+    # From first character to second last character in pat
     for i in range(m - 1):
 
         j = m - z_suffix_array[i]
@@ -184,6 +186,9 @@ def reversed_good_suffix(pat: str) -> list[int]:
 
     Returns:
     list[int]: Reversed good "prefix" array
+
+    Note:
+    - When accessing the reversed good suffix array len(pat) - 1 - goodsuffix(mismatch - 1)
     """
     good_prefix = good_suffix(pat[::-1])
     return good_prefix[::-1]
@@ -204,8 +209,8 @@ def matched_prefix(pat: str) -> list[int]:
     list[int]: A list of integer containing the length of the longest suffix that matches prefix
 
     Note:
-    Require O(m) time complexity. Applies Z algorithm which takes O(m) time and process the z array
-    to obtain the matched prefix array O(m), O(m + m) = O(2m) = O(m)
+    - Require O(m) time complexity. Applies Z algorithm which takes O(m) time and process the z array
+      to obtain the matched prefix array O(m), O(m + m) = O(2m) = O(m)
     """
     # Apply Z algorithm
     z_matched_array = z_algorithm(pat)
@@ -242,11 +247,75 @@ def reversed_matched_prefix(pat: str) -> list[int]:
 
     Returns:
     list[int]: A list of int containing the largest suffix that matches prefix in the reversed direction
+
+    Note:
+    - When accessing reversed matched prefix array len(pat) - matchedprefix(mismatch)
+    - Since matchedprefix is reversed when returned, m + 1 will now be 0, so if mismatch occurs at 
+      position 0 then we want to take m + 1, thus matchedprefix(0)
     """
     reversed_mp_arr = matched_prefix(pat[::-1])
     return reversed_mp_arr[::-1]
 
 
+def reversed_boyer_moore(text: str, pat: str) -> list[int]:
+    n = len(text)
+    m = len(pat)
+
+    bad_char_arr = reversed_ext_bad_char(pat)
+    good_suffix_arr = reversed_good_suffix(pat)
+    matched_prefix_arr = reversed_matched_prefix(pat)
+
+    occurrence = []
+
+    i = n - 1
+
+    while True:
+        # Get the index of the text relative to the left most index of pat
+        search_index_on_text = i - (m - 1)
+        # If the index is negative means that pattern exceeded the text
+        if search_index_on_text < 0:
+            break
+
+        # Set text and pattern pointer
+        pattern_pointer = 0
+        text_pointer = search_index_on_text
+
+        # Loop to check pattern with text and perform shifts
+        while True:
+            if pattern_pointer == m:
+                occurrence.append(search_index_on_text + 1)
+                shift_amt = m - matched_prefix_arr[-2]
+                i -= shift_amt
+                break
+
+            # If the text and pat char is the same then check next char in pat and text
+            if text[text_pointer] == pat[pattern_pointer]:
+                text_pointer += 1
+                pattern_pointer += 1
+
+                continue
+
+            else:
+                # If not the same perform shifts
+                # Char mismatch in text
+                char_mismatch = text[text_pointer]
+                # Get bad char shift, refer to Note in reversed_ext_bad_char function
+                bad_char_index = bad_char_arr[pattern_pointer][get_index_from_char(
+                    char_mismatch)]
+                bc_shift = m - 1 - bad_char_index - pattern_pointer
+
+                if good_suffix_arr[pattern_pointer] == NAN:
+                    gs_shift = m - matched_prefix_arr[pattern_pointer]
+                else:
+                    gs_shift = m - 1 - good_suffix_arr[pattern_pointer]
+
+                shift_amt = max(bc_shift, gs_shift)
+                i -= shift_amt
+                break
+    return occurrence
+
+
 if __name__ == "__main__":
-    pat = "abacaba"
-    print(matched_prefix("acababacaba"[::-1])[::-1])
+    txt = "abcabcabca"
+    pat = "bc"
+    print(reversed_boyer_moore(txt, pat))
